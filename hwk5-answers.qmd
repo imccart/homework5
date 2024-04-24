@@ -1,0 +1,206 @@
+---
+title: "Homework 5"
+subtitle: "Research Methods, Spring 2024"
+author: "Answer Key"
+format:
+  pdf:
+    output-file: "mccarthy-i-hwk5-1"
+    output-ext:  "pdf"
+    header-includes:
+      - \usepackage{float}
+      - \floatplacement{table}{H}
+---
+
+```{r}
+#| include: false
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, 
+               data.table, gdata, scales, kableExtra, modelsummary, fixest)
+```
+
+
+```{r}
+#| include: false
+#| eval: true
+ 
+load("analysis/Hwk5_workspace.Rdata")
+```
+
+
+My answers to the homework questions are described below. As with the previous homework assignments, note that my analysis is in a separate `R` script. Enjoy!
+
+# Summarize the data
+
+\noindent 1. Plot the share of insured individuals with direct purchase health insurance over time.
+
+@fig-directplot presents the share of individuals with direct purchase of health insurance in any given year, averaged across states.
+
+```{r}
+#| echo: false
+#| label: fig-directplot
+#| fig-cap: "Share of Individuals with Direct Purchase"
+
+direct.plot
+```
+
+
+\newpage
+\noindent 2. Discuss the reduction in direct purchase health insurance in later years. Can you list a couple of policies that might have affected the success of the direct purchase insurance market?
+
+
+There are several policies to choose from here. But they all relate to the Trump administration's attempts to restrict the ACA. Not surprisingly, enrollment in ACA exchange plans dropped from 2016 to 2017, and continued to drop in 2018. Two things that the current administration has done to restrict access to ACA exchanges are: 1) denial of funding for navigators and marketing; and 2) decision not to enforce failure to pay the individual mandate (which has since been set to 0 as of 2020).
+
+
+\newpage
+\noindent 3. Plot the share of the adult population with Medicaid over time.
+
+@fig-medicaidplot presents the share of individuals with Medicaid in any given year, averaged across states.
+
+```{r}
+#| echo: false
+#| label: fig-medicaidplot
+#| fig-cap: "Share of Individuals with Medicaid"
+
+medicaid.plot
+```
+
+
+\newpage
+\noindent 4. Plot the share of uninsured over time, separately by states that expanded Medicaid in 2014 versus those that did not. Drop all states that expanded after 2014.
+
+Average uninsurance shares by state are presented in @fig-uninsuranceplot. As we can see, the uninsurance rates were different before 2014 among the two groups of states, but the trends appear relatively similar.
+
+```{r}
+#| echo: false
+#| label: fig-uninsuranceplot
+#| fig-cap: "Average Uninsured by Medicaid Expansion"
+
+uninsurance.plot
+```
+
+
+\newpage
+# Estimate ATEs
+For the rest of the assignment, we're going to apply the difference-in-differences estimator to the question of Medicaid expansion and uninsurance.
+
+
+\noindent 1. Calculate the average percent of uninsured individuals in 2012 and 2015, separately for expansion and non-expansion states. Present your results in a basic 2x2 DD table.
+
+
+The "standard" 2x2 DD table is presented in @tbl-ddtable, showing averages pre/post, treatment/control averages. From these averages, our DD estimate for the effect of Medicaid expansion on uninsurance would be `r format(dd.table[2,3]-dd.table[2,2]-(dd.table[1,3]-dd.table[1,2]),digits=3)`.
+
+```{r}
+#| echo: false
+#| label: tbl-ddtable
+#| tbl-cap: "DD Table for Medicaid Expansion"
+
+knitr::kable(dd.table, 
+             col.names=c("Group", "Pre", "Post"),
+             digits=2,
+             booktabs = TRUE,
+             escape=F,
+             align="l",
+             format='latex') %>% 
+  kable_styling(full_width=F,
+                latex_options="hold_position")
+```
+
+
+\newpage
+\noindent 2.Estimate the effect of Medicaid expansion on the uninsurance rate using a standard DD regression estimator, again focusing only on states that expanded in 2014 versus those that never expanded.
+
+Results are summarized in @tbl-ddregs
+
+```{r}
+#| echo: false
+#| label: tbl-ddregs
+#| tbl-cap: "DD Estimates for Medicaid Expansion"
+
+modelsummary(dd.est,
+             coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
+                           "treat" = "Post x Expand"),
+             gof_omit='DF|F|Lik|AIC|BIC|Adj') %>%
+    kable_styling(latex_options="hold_position")
+```
+
+
+
+\newpage
+\noindent 3. Include state and year *fixed effects* in your estimates. Try using the `lfe` or `fixest` package to estimate this instead of directly including the fixed effects.
+
+
+Results are summarized in @tbl-ddregs2, alongside the results from a standard DD estimator. As we can see, the estimates with year and state fixed effects are identical to those of the standard DD estimator. 
+
+```{r}
+#| echo: false
+#| label: tbl-ddregs2
+#| tbl-cap: "DD Estimates for Medicaid Expansion with TWFE"
+
+models <- list("Standard DD" = dd.est, 
+               "TWFE" = fe.est)
+modelsummary(models,
+             coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
+                           "treat" = "Post x Expand"),
+             gof_omit='DF|F|Lik|AIC|BIC|Adj') %>%
+    kable_styling(latex_options="hold_position")
+```
+
+
+
+
+\newpage
+\noindent 4. Repeat the analysis in question 3 but include all states (even those that expanded after 2014). Are your results different? If so, why?
+
+
+In this case, we again include state and year fixed effects, but the treatment interaction term is different depending on when the state expanded. The interaction term will be 1 in years 2014 and beyond if a state expanded in 2014, it will be 1 in years 2015 and beyond if they expanded in 2015, and so on. In all other years and for the never-expanding states, the interaction term is 0. Regression results are summarized in @tbl-ddregs3, with prior results included for reference:
+
+```{r}
+#| echo: false
+#| label: tbl-ddregs3
+#| tbl-cap: "DD Estimates for Medicaid Expansion with Staggered Treatment"
+
+models <- list("Standard DD" = dd.est, 
+               "TWFE" = fe.est,
+               "Time-varying Treatment" = fe.est2)
+modelsummary(models,
+             coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
+                           "treat" = "Post x Expand"),
+             gof_omit='DF|F|Lik|AIC|BIC|Adj') %>%
+    kable_styling(latex_options="hold_position")
+```
+
+
+\newpage
+\noindent 5. Provide an "event study" graph showing the effects of Medicaid expansion in each year. Use the specification that includes state and year fixed effects, limited to states that expanded in 2014 or never expanded.
+
+
+Event study estimates for 2014 expansion are presented in @fig-eventstudy1. 
+
+```{r}
+#| echo: false
+#| label: fig-eventstudy1
+#| fig-cap: "Event Study with Common Treatment Time"
+
+iplot(mod.twfe, 
+      xlab = 'Time to treatment',
+      main = '')
+```
+
+
+
+\newpage
+\noindent 6. Repeat part 5 but again include states that expanded after 2014. Note: this is tricky...you need to put all states onto "event time" to create this graph.
+
+
+Event study estimates for all expansion states (time varying treatment) are presented in @fig-eventstudy2. Here, time of 0 denotes the start of treatment, so *t-1* is the baseline period for which every other period is estimated. That's why the coefficient for the *t-1* period is normalized to 0. Note that the full data run from 2012 to 2018, so uninsurance in period *t-4* is only observed for states that expanded in 2016. Since very few states expanded in 2017 or 2018, I've lumped all of those states into the *t-4* period.
+
+```{r}
+#| echo: false
+#| label: fig-eventstudy2
+#| fig-cap: "Event Study with Staggered Treatment"
+
+iplot(mod.twfe2, 
+      xlab = 'Time to treatment',
+      main = '')
+```
