@@ -1,4 +1,5 @@
 # Repo for Econ/HLTH 470 Homework 5
 
-This is the repository for the fifth (and final!) homework assignment for Econ/HLTH 470. Details of the assignment are on our class webpage.
+This is the repository for the fifth (and final!) homework assignment for Econ/HLTH 470.
+
 
