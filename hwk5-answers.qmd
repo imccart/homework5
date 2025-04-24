@@ -1,6 +1,6 @@
 ---
 title: "Homework 5"
-subtitle: "Research Methods, Spring 2024"
+subtitle: "Research Methods, Spring 2025"
 author: "Answer Key"
 format:
   pdf:
@@ -102,8 +102,7 @@ knitr::kable(dd.table,
              escape=F,
              align="l",
              format='latex') %>% 
-  kable_styling(full_width=F,
-                latex_options="hold_position")
+  kable_styling(full_width=F)
 ```
 
 
@@ -120,8 +119,7 @@ Results are summarized in @tbl-ddregs
 modelsummary(dd.est,
              coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
                            "treat" = "Post x Expand"),
-             gof_omit='DF|F|Lik|AIC|BIC|Adj') %>%
-    kable_styling(latex_options="hold_position")
+             gof_omit='DF|F|Lik|AIC|BIC|Adj')
 ```
 
 
@@ -142,8 +140,7 @@ models <- list("Standard DD" = dd.est,
 modelsummary(models,
              coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
                            "treat" = "Post x Expand"),
-             gof_omit='DF|F|Lik|AIC|BIC|Adj') %>%
-    kable_styling(latex_options="hold_position")
+             gof_omit='DF|F|Lik|AIC|BIC|Adj')
 ```
 
 
@@ -166,8 +163,7 @@ models <- list("Standard DD" = dd.est,
 modelsummary(models,
              coef_rename=c("postTRUE" = "Post 2014","expand_everTRUE"="Expand",
                            "treat" = "Post x Expand"),
-             gof_omit='DF|F|Lik|AIC|BIC|Adj') %>%
-    kable_styling(latex_options="hold_position")
+             gof_omit='DF|F|Lik|AIC|BIC|Adj')
 ```
 
 
